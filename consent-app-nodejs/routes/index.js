@@ -1,12 +1,11 @@
-var express = require('express');
-var axios = require('axios');
-var qs = require('qs');
-var https = require('https');
-
-const { HttpError } = require('http-errors');
+const express = require('express');
+const axios = require('axios');
+const qs = require('qs');
+const https = require('https');
 const res = require('express/lib/response');
-var router = express.Router();
 require('dotenv').config();
+
+const router = express.Router();
 
 const tenant_id=process.env.TENANT_ID; 
 const issuer_url=process.env.ISSUER_URL; 
@@ -51,16 +50,13 @@ router.get('/consent', (req, res) => {
 });
 
 router.post('/submit', function (req, res, next) {
-  let scopes = []
+  let scopes = [];
   for (const scope in req.body) {
-    scopes.push(scope)
+    scopes.push(scope);
   }
 
   const data = JSON.stringify({ granted_scopes: scopes, id: appState.id, login_state: appState.state });
 
-  // https://localhost:8443/api/system/default/scope-grants/{login}
-  // https://localhost:8443/api/system/default/scope-grants/{login}
-// /api/system/tenant-id/scope-grants....
   const options = {
     url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/accept',
     method: "POST",
@@ -73,9 +69,9 @@ router.post('/submit', function (req, res, next) {
   }
 
   axiosInstance(options).then(r => {
-    res.redirect(r.data.redirect_to)
+    res.redirect(r.data.redirect_to);
   }).catch(e => {
-    console.log(e)
+    console.log(e);
     res.render('error', { msg: e })});
 
 });
@@ -83,14 +79,14 @@ router.post('/submit', function (req, res, next) {
 const getGrants = async (appState) => {
   appState.access_token = await getToken(appState.state);
   if (appState.access_token === null) {
-    res.render('error', { msg: 'error getting token' })
-    return
+    res.render('error', { msg: 'error getting token' });
+    return;
   }
   let scopes = await getScopeGrants(appState);
   if (scopes === null) {
-    return
+    return;
   }
-  return scopes
+  return scopes;
 }
 
 const getToken = async (state) => {
@@ -108,12 +104,11 @@ const getToken = async (state) => {
       data: data
     };
 
-    console.log('url', options.url)
     const response = await axiosInstance(options);
     return response.data.access_token;
   } catch (error) {
-    console.log(e, error)
-    res.render('error', { msg: 'got error on getting token - ' + error })
+    console.log(e, error);
+    res.render('error', { msg: 'got error on getting token - ' + error });
   }
 }
 
@@ -128,13 +123,13 @@ const getScopeGrants = async (appState) => {
         'Authorization': 'Bearer ' + appState.access_token,
       }
     }
-    const response = await axiosInstance(options)
-    appState.redirectURI = response.data.request_query_params.redirect_uri[0]
+    const response = await axiosInstance(options);
+    appState.redirectURI = response.data.request_query_params.redirect_uri[0];
 
-    return response.data.requested_scopes
+    return response.data.requested_scopes;
   } catch (error) {
-    console.log(e)
-    res.render('error', { msg: 'failed to get scope grants - ' + error })
+    console.log(e);
+    res.render('error', { msg: 'failed to get scope grants - ' + error });
   }
 }
 
