@@ -53,14 +53,7 @@ router.post('/submit', function (req, res, next) {
     return;
   }
 
-  let scopes = [];
-  for (const scope in req.body) {
-    if (scope === 'accept') {
-      continue;
-    }
-    scopes.push(scope);
-  }
-  acceptScopeGrants(scopes, res);
+  acceptScopeGrants(req, res);
 });
 
 const getGrants = async (appState) => {
@@ -119,7 +112,14 @@ const getScopeGrants = async (appState) => {
   }
 }
 
-const acceptScopeGrants = async (scopes, res) => {
+const acceptScopeGrants = async (req, res) => {
+  let scopes = [];
+  for (const scope in req.body) {
+    if (scope === 'accept') {
+      continue;
+    }
+    scopes.push(scope);
+  }
   const data = JSON.stringify({ granted_scopes: scopes, id: appState.id, login_state: appState.state });
 
   const options = {
