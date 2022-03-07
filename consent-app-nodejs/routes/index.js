@@ -114,11 +114,11 @@ const getScopeGrants = async (appState) => {
 
 const acceptScopeGrants = async (req, res) => {
   let scopes = [];
-  for (const scope in req.body) {
-    if (scope === 'accept') {
+  for (const val in req.body) {
+    if (val === 'accept') {
       continue;
     }
-    scopes.push(scope);
+    scopes.push(val);
   }
   const data = JSON.stringify({ granted_scopes: scopes, id: appState.id, login_state: appState.state });
 
