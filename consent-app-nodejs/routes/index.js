@@ -6,12 +6,10 @@ const res = require('express/lib/response');
 require('dotenv').config();
 
 const router = express.Router();
-
 const tenant_id=process.env.TENANT_ID; 
 const issuer_url=process.env.ISSUER_URL; 
 const client_id = process.env.CLIENT_ID; 
 const client_secret = process.env.CLIENT_SECRET; 
-
 const auth_token = Buffer.from(`${client_id}:${client_secret}`, 'utf-8').toString('base64');
 const origin = (new URL(issuer_url)).origin;
 
@@ -36,7 +34,7 @@ router.get('/consent', (req, res) => {
   const login_id = req.query.login_id;
   const state = req.query.login_state;
   if (state == '' || login_id == '') {
-    res.render('error', { msg: 'missing state and/or login id' })
+    res.render('error', { msg: 'missing state and/or login id' });
     return;
   }
   appState.id = login_id
