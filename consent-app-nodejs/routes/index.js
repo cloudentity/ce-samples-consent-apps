@@ -48,30 +48,19 @@ router.get('/consent', (req, res) => {
 });
 
 router.post('/submit', function (req, res, next) {
+  if (req.body.reject) {
+    rejectScopeGrants(res);
+    return;
+  }
+
   let scopes = [];
   for (const scope in req.body) {
+    if (scope === 'accept') {
+      continue;
+    }
     scopes.push(scope);
   }
-
-  const data = JSON.stringify({ granted_scopes: scopes, id: appState.id, login_state: appState.state });
-
-  const options = {
-    url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/accept',
-    method: "POST",
-    path: '',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Bearer ' + appState.access_token,
-    },
-    data: data
-  }
-
-  axiosInstance(options).then(r => {
-    res.redirect(r.data.redirect_to);
-  }).catch(e => {
-    console.log(e);
-    res.render('error', { msg: e })});
-
+  acceptScopeGrants(scopes, res);
 });
 
 const getGrants = async (appState) => {
@@ -115,7 +104,6 @@ const getScopeGrants = async (appState) => {
     const options = {
       url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '?login_state=' + appState.state,
       method: "GET",
-      path: '',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': 'Bearer ' + appState.access_token,
@@ -129,6 +117,45 @@ const getScopeGrants = async (appState) => {
     console.log(e);
     res.render('error', { msg: 'failed to get scope grants - ' + error });
   }
+}
+
+const acceptScopeGrants = async (scopes, res) => {
+  const data = JSON.stringify({ granted_scopes: scopes, id: appState.id, login_state: appState.state });
+
+  const options = {
+    url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/accept',
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Bearer ' + appState.access_token,
+    },
+    data: data
+  }
+
+  axiosInstance(options).then(r => {
+    res.redirect(r.data.redirect_to);
+  }).catch(e => {
+    console.log(e);
+    res.render('error', { msg: e })});
+}
+const rejectScopeGrants = async (res) => {
+  const data = JSON.stringify({ id: appState.id, login_state: appState.state });
+
+  const options = {
+    url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/reject',
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Bearer ' + appState.access_token,
+    },
+    data: data
+  }
+
+  axiosInstance(options).then(r => {
+    res.redirect(r.data.redirect_to);
+  }).catch(e => {
+    console.log(e);
+    res.render('error', { msg: e })});
 }
 
 module.exports = router;
