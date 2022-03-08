@@ -12,28 +12,28 @@ Cloudentity offers a free SaaS Tenant and you can sign up for one, if you have n
 - [ExpressJS](https://expressjs.com) - Recommended 4.16.1 +
 
 ### Basic Concepts
-When a user log in to and is authenticated to an OAuth server the user is shown a consent page where the user can accept or reject consents. [Cloudentity Authorization Platform](https://authz.cloudentity.io/) allows the client to set up a custom consent page. There can be a number of reason where a client would like a custom consent page, one of which is OpenBanking. 
+When a user is authenticated with an OAuth server the user is shown a consent page where the user can accept or reject consents. [Cloudentity Authorization Platform](https://authz.cloudentity.io/) allows the client to set up a custom consent page. There can be a number of reasons why a client would like a custom consent page, one of which is OpenBanking. 
 
-An overview of the flow can be seen in the image below.
-![overview custom consent flow](images/ob-custom-consent-page-flow.png)
+An overview of the flow can be seen below.
+![overview custom consent](images/ob-custom-consent-page-flow.png)
 
-First, the user agent is redirected to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server, where the user logs in and is authenticated. Once authenticated, [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server then redirects the user to the application hosting the custom consent page . The application then calls ACP-internal API to retrieve details on the account access consents. The applicatiojn displays the consents to the user and the user can accept all, reject all, or accept only some of the consents. Once a selection is made the application redirects the user back to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server.
+First, the user agent is redirected to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server, where the user logs in and is authenticated. Once authenticated, [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server then redirects the user to the application hosting the custom consent page . The application then calls the ACP scope grant request API to retrieve details on the account access consents. The application displays the consents to the user and the user can accept all, reject all, or accept only some of the consents. Once a selection is made the application redirects the user back to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server.
 
 ### Preparing Cloudentity SaaS
 First, we create a new workspace for this tutorial. 
 
-From the Authorization Workspaces page, choose 'Create'.  Select 'Demo Environment' from the type of applications and services.  Enter a Display Name of your choosing and select 'Enable demo application' then select 'Next'.  On the Identify Pools page, under 'Custom and test connections', choose 'Sandbox IDP'. Give the Sandbox IDP a name and enter a Username and Password then select 'Next'. On the 'Create developer portal' page optionally add a developer portal or choose 'Skip'. You will then be redirected to the Authorization Workspaces page.
+From the Authorization Workspaces page, choose 'Create'.  Select 'Demo Environment' type from applications and services.  Enter a Display Name of your choosing and select 'Enable demo application' then select 'Next'.  On the Identify Pools page, under 'Custom and test connections', choose 'Sandbox IDP'. Give the Sandbox IDP a name and enter a Username and Password then select 'Next'. On the 'Create developer portal' page optionally add a developer portal or choose 'Skip'. You will then be redirected to the Authorization Workspaces page.
 
 Select your new workspace and on the left navigation panel choose Auth Settings->Consent. Then select ‘Open Banking Consent’. In the ‘Consent URL’ field add your callback URL. In our app we add a callback of `http://localhost:4001/consent`. Note: The port for this sample app can be changed in .env.  
 
-Make note of the `CLIENT ID` and `CLIENT SECRET` as we will be using these in our application. They will be entered in the `.env` file a the root of the project. Also, make note of your `Tenant ID` in the top right. 
+Make note of the `CLIENT ID` and `CLIENT SECRET` as we will be using these in our application. They will be entered in the `.env` file at the root of the project. Also, make note of your `Tenant ID` in the top right. 
 
 On the left navigation menu choose Auth Settings->OAuth and from the General tab copy the `Authorization Server URL`.
 
-Your workspace is now ready and will redirect the user to the custom consent page of our Node.js application after the user authenticates.
+Your workspace is now ready and the authorization server will now redirect the user to the custom consent page of our Node.js application after the user authenticates.
 
 ### Building the Node.js application
-In the sample application repo, from the root of the project open the .env and add your `CLIENT_ID`, `CLIENT_SECRET`, `AUTHORIZATION_SERVER_URL`, and `TENANT_ID` that was copied previously.
+In the sample application repository, from the root of the project open the `.env` file and add your `CLIENT_ID`, `CLIENT_SECRET`, `AUTHORIZATION_SERVER_URL`, and `TENANT_ID` that was copied previously.
 
 `app.js` is just boilerplate for setting up our Express.js application and specifying that we are using Handlebars.js for our view engine.
 
@@ -47,7 +47,7 @@ const client_id = process.env.CLIENT_ID;
 const client_secret = process.env.CLIENT_SECRET;
 ```
 
-When we enabled a custom consent page in [Cloudentity Authorization Platform](https://authz.cloudentity.io/) an application was created for us in the System workspace. This application has grant type `client credentials` and `Client Secret Basic` as the Token Endpoint Authentication Method. Using the `CLIENT_ID` and `CLIENT_SECRET` we prepare our token which will be used for getting an access token.
+When we enabled a custom consent page in [Cloudentity Authorization Platform](https://authz.cloudentity.io/) an application was created for us in the System workspace. This application has grant type `client credentials` and `Client Secret Basic` as the Token Endpoint Authentication Method. Using `CLIENT_ID` and `CLIENT_SECRET` we prepare our token which will be used for getting an access token.
 ```
 const auth_token = Buffer.from(`${client_id}:${client_secret}`, 'utf-8').toString('base64');
 ```
@@ -89,7 +89,7 @@ const getScopeGrants = async (res) => {
   getScopeGrantRequest(res);
 }
 ```
-We make a request to the token endpoint for our access token using the  [ACP API](https://docs.authorization.cloudentity.com/api/oauth2/#operation/token).
+We make a request to the token endpoint for our access token using the  [ACP Token API](https://docs.authorization.cloudentity.com/api/oauth2/#operation/token).
 ```
 const getAccessToken = async (res) => {
   try {
@@ -184,7 +184,7 @@ const handleConsent = async (res, consent, data) => {
 ```
 
 ### Conclusion
-ACP makes it easy to use a custom consent page, if desired. With very little configuration in ACP and just a few lines of code we were able to implement the custom consent page using Node.js. 
+ACP makes it easy to implement a custom consent page, if desired. With very little configuration in ACP and just a few lines of code we were able to implement the custom consent page using Node.js. 
 
 ### Relevant Links
  - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749)
