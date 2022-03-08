@@ -13,14 +13,12 @@
 
 <body style="background-color: #f8f5f3;">
 	<div class="d-flex flex-column min-vh-100 justify-content-center align-items-center mx-auto" style="width: 600px;">
-		<p class="h3 text-primary text-center">Consents</p>
-
 		<div class="card">
 			<div class="card-body">
-				<form id="scopeForm" action="/submit" method="post">
+				<h5 class="card-title">Scopes</h5>
+				<form id="scopeForm" action="/accept" method="post">
 					{{#each scopes}}
 					<div class="form-check">
-
 						<input type="checkbox" class="form-check-input" id="{{this.name}}" name="{{this.name}}" checked>
 						<label class="form-check-label" for="{{this.name}}">{{this.display_name}} -
 							{{this.description}}</label>
@@ -28,10 +26,12 @@
 					{{/each}}
 					<div class="row">
 						<div class="col">
-							<button type="button"  class="text-center btn btn-primary mt-3 float-end" onclick="accept()">Accept</button>
+							<button type="button" class="text-center btn btn-primary mt-3 float-end"
+								onclick="accept()">Accept</button>
 						</div>
 						<div class="col">
-							<button type="button"  class="text-center btn btn-danger mt-3" onclick="reject()">Reject</button>
+							<button type="button" class="text-center btn btn-danger mt-3"
+								onclick="reject()">Reject</button>
 						</div>
 					</div>
 				</form>
@@ -45,7 +45,7 @@
 		}
 
 		function reject() {
-			window.location='/reject';
+			window.location = '/reject';
 		}
 	</script>
 
