@@ -13,7 +13,7 @@ const axiosInstance = axios.create({
 });
 
 const tenant_id = process.env.TENANT_ID;
-const issuer_url = process.env.ISSUER_URL;
+const issuer_url = process.env.AUTHORIZATION_SERVER_URL;
 const client_id = process.env.CLIENT_ID;
 const client_secret = process.env.CLIENT_SECRET;
 const auth_token = Buffer.from(`${client_id}:${client_secret}`, 'utf-8').toString('base64');
