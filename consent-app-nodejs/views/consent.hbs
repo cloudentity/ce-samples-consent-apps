@@ -17,7 +17,7 @@
 
 		<div class="card">
 			<div class="card-body">
-				<form action="/submit" method="post">
+				<form id="scopeForm" action="/submit" method="post">
 					{{#each scopes}}
 					<div class="form-check">
 
@@ -28,17 +28,26 @@
 					{{/each}}
 					<div class="row">
 						<div class="col">
-							<input name="accept" type="submit" value="Accept" class="text-center btn btn-primary mt-3 float-end">
+							<button type="button"  class="text-center btn btn-primary mt-3 float-end" onclick="accept()">Accept</button>
 						</div>
 						<div class="col">
-							<input name="reject" type="submit" value="Reject" class="text-center btn btn-danger mt-3">
+							<button type="button"  class="text-center btn btn-danger mt-3" onclick="reject()">Reject</button>
 						</div>
 					</div>
-
 				</form>
 			</div>
 		</div>
 	</div>
+
+	<script>
+		function accept() {
+			document.getElementById('scopeForm').submit();
+		}
+
+		function reject() {
+			window.location='/reject';
+		}
+	</script>
 
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
 		integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"

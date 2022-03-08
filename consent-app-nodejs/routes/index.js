@@ -6,10 +6,10 @@ const res = require('express/lib/response');
 require('dotenv').config();
 
 const router = express.Router();
-const tenant_id=process.env.TENANT_ID; 
-const issuer_url=process.env.ISSUER_URL; 
-const client_id = process.env.CLIENT_ID; 
-const client_secret = process.env.CLIENT_SECRET; 
+const tenant_id = process.env.TENANT_ID;
+const issuer_url = process.env.ISSUER_URL;
+const client_id = process.env.CLIENT_ID;
+const client_secret = process.env.CLIENT_SECRET;
 const auth_token = Buffer.from(`${client_id}:${client_secret}`, 'utf-8').toString('base64');
 const origin = (new URL(issuer_url)).origin;
 
@@ -37,10 +37,11 @@ router.get('/consent', (req, res) => {
     res.render('error', { msg: 'missing state and/or login id' });
     return;
   }
+
   appState.id = login_id
   appState.state = state
 
-  getGrants(appState).then(scopes => res.render('consent', { scopes: scopes })
+  getGrants().then(scopes => res.render('consent', { scopes: scopes })
   ).catch(e => {
     console.log(e)
     res.render('error', { msg: e })
@@ -48,15 +49,20 @@ router.get('/consent', (req, res) => {
 });
 
 router.post('/submit', function (req, res, next) {
-  if (req.body.reject) {
-    rejectScopeGrants(res);
-    return;
+  let scopes = [];
+  for (const val in req.body) {
+    scopes.push(val);
   }
-
-  acceptScopeGrants(req, res);
+  const data = JSON.stringify({ granted_scopes: scopes, id: appState.id, login_state: appState.state });
+  handleConsent(req, res, 'accept', data);
 });
 
-const getGrants = async (appState) => {
+router.get('/reject', function (req, res, next) {
+  const data = JSON.stringify({ id: appState.id, login_state: appState.state });
+  handleConsent(req, res, 'reject', data);
+});
+
+const getGrants = async () => {
   appState.access_token = await getToken(appState.state);
   if (appState.access_token === null) {
     res.render('error', { msg: 'error getting token' });
@@ -108,22 +114,13 @@ const getScopeGrants = async (appState) => {
     return response.data.requested_scopes;
   } catch (error) {
     console.log(e);
-    res.render('error', { msg: 'failed to get scope grants - ' + error });
+    res.render('error', { msg: 'failed to get scope grants: ' + error });
   }
 }
 
-const acceptScopeGrants = async (req, res) => {
-  let scopes = [];
-  for (const val in req.body) {
-    if (val === 'accept') {
-      continue;
-    }
-    scopes.push(val);
-  }
-  const data = JSON.stringify({ granted_scopes: scopes, id: appState.id, login_state: appState.state });
-
+const handleConsent = async (req, res, consent, data) => {
   const options = {
-    url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/accept',
+    url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/' + consent,
     method: "POST",
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -132,30 +129,13 @@ const acceptScopeGrants = async (req, res) => {
     data: data
   }
 
-  axiosInstance(options).then(r => {
-    res.redirect(r.data.redirect_to);
-  }).catch(e => {
-    console.log(e);
-    res.render('error', { msg: e })});
-}
-const rejectScopeGrants = async (res) => {
-  const data = JSON.stringify({ id: appState.id, login_state: appState.state });
-
-  const options = {
-    url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/reject',
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Bearer ' + appState.access_token,
-    },
-    data: data
+  try {
+    let acceptRes = await axiosInstance(options)
+    res.redirect(acceptRes.data.redirect_to);
+  } catch (error) {
+    console.log(error);
+    res.render('error', { msg: 'failed to submit consent acceptance: ' + error });
   }
-
-  axiosInstance(options).then(r => {
-    res.redirect(r.data.redirect_to);
-  }).catch(e => {
-    console.log(e);
-    res.render('error', { msg: e })});
 }
 
 module.exports = router;
