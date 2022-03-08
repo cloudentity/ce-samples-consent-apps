@@ -8,7 +8,7 @@ In this specific article , we will be creating a Node.js application that will d
 Cloudentity offers a free SaaS Tenant and you can sign up for one, if you have not already, for a free account. With this you are basically getting a free OAuth/OIDC compliant server with all the latest specifications comprising of OpenData initiatives across the world.
 
 ##### Go Application
-- [Node.js](https://nodejs.org) - Recommended v17.0.1 +
+- [Node.js](https://nodejs.org) - Recommended v16.x +
 - [ExpressJS](https://expressjs.com) - Recommended 4.16.1 +
 
 ### Basic Concepts
