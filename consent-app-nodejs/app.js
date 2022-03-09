@@ -13,8 +13,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.set('view engine', 'hbs');
 
-app.set('port', 4000);
-app.listen(app.get('port'));
+var port = process.env.PORT;
+console.log('listening on http://localhost:' + port + '/');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

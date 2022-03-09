@@ -17,7 +17,7 @@ When a user is authenticated with an OAuth server the user is shown a consent pa
 An overview of the flow can be seen below.
 ![overview custom consent](images/ob-custom-consent-page-flow.png)
 
-First, the user agent is redirected to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server, where the user logs in and is authenticated. Once authenticated, [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server then redirects the user to the application hosting the custom consent page . The application then calls the ACP scope grant request API to retrieve details on the account access consents. The application displays the consents to the user and the user can accept all, reject all, or accept only some of the consents. Once a selection is made the application redirects the user back to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server.
+First, the user agent is redirected to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server, where the user logs in and is authenticated. Once authenticated, [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server then redirects the user to the application hosting the custom consent page . The application then calls the Cloudentity authorization platform scope grant request API to retrieve details on the account access consents. The application displays the consents to the user and the user can accept all, reject all, or accept only some of the consents. Once a selection is made the application redirects the user back to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server.
 
 ### Preparing Cloudentity SaaS
 First, we create a new workspace for this tutorial. 
@@ -59,7 +59,7 @@ router.get('/', function (req, res, next) {
 });
 ```
 
-Next we had a route for `/consent`. This is our redirect URI that ACP will redirect users to after they authenticate. The process for handling the custom consent page callback is found here [Integrating the custom consent page with ACP](https://docs.authorization.cloudentity.com/guides/ob_guides/custom_consent_page/?q=custom%20consent). We get the login id and login state params. If they are missing we display an error and return. Once we have our login id and state we then `getScopGrants`.
+Next we had a route for `/consent`. This is our redirect URI that Cloudentity authorization platform will redirect users to after they authenticate. The process for handling the custom consent page callback is found here [Integrating the custom consent page](https://docs.authorization.cloudentity.com/guides/ob_guides/custom_consent_page/?q=custom%20consent). We get the login id and login state params. If they are missing we display an error and return. Once we have our login id and state we then `getScopGrants`.
 ```
 router.get('/consent', (req, res) => {
   const login_id = req.query.login_id;
@@ -89,15 +89,17 @@ const getScopeGrants = async (res) => {
   getScopeGrantRequest(res);
 }
 ```
-We make a request to the token endpoint for our access token using the  [ACP Token API](https://docs.authorization.cloudentity.com/api/oauth2/#operation/token).
+We make a request to the token endpoint for our access token using the  [Token API](https://docs.authorization.cloudentity.com/api/oauth2/#operation/token).
 ```
-const getAccessToken = async (res) => {
+const getAccessToken = async (res) => {  
+  let CLOUDENTITY_TOKEN_FETCH_API = getTokenURL();
+
   try {
     const data = qs.stringify({ grant_type: 'client_credentials', scope: 'manage_scope_grants', state: appState.access_token });
 
     const options = {
       method: 'POST',
-      url: origin + '/' + tenant_id + '/system/oauth2/token',
+      url: CLOUDENTITY_TOKEN_FETCH_API,
       rejectUnauthorized: false,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -113,13 +115,20 @@ const getAccessToken = async (res) => {
     res.render('error', { msg: 'error getting access token: ' + error });
   }
 }
+
+// https://docs.authorization.cloudentity.com/api/oauth2/#operation/token
+function getTokenURL() {
+  return origin + '/' + tenant_id + '/system/oauth2/token';
+}
 ```
 
-Once we obtain an access token we make the scope grant request using the [ACP Consent Request API](https://docs.authorization.cloudentity.com/api/system/#operation/getScopeGrantRequest).
+Once we obtain an access token we make the scope grant request using the [Consent Request API](https://docs.authorization.cloudentity.com/api/system/#operation/getScopeGrantRequest).
 ```
 const getScopeGrantRequest = async (res) => {
+  let CLOUDENTITY_SCOPE_GRANT_FETCH_API = getScopeGrantURL();
+
   const options = {
-    url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '?login_state=' + appState.state,
+    url: CLOUDENTITY_SCOPE_GRANT_FETCH_API,
     method: "GET",
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -136,11 +145,75 @@ const getScopeGrantRequest = async (res) => {
     res.render('error', { msg: 'error getting scope grants: ' + error });
   }
 }
+
+// https://docs.authorization.cloudentity.com/api/system/#operation/getScopeGrantRequest
+function getScopeGrantURL() {
+  return origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '?login_state=' + appState.state;
+}
 ```
 
-The response from the scope grant request will include the requested scopes. We then display the requested scopes to the user. The user can then choose which, if any, scopes they will allow or they can reject the request for access altogether. 
+The response from the scope grant request will include the requested scopes. We then display the requested scopes to the user. The user can then choose which, if any, scopes they will allow or they can reject the request for access altogether. This application uses Handlebars.js for the view engine. For each scope we display the `display_name` of the scope and the `description`. The template is as shown below.
+```
+<!doctype html>
+<html lang="en">
 
-If the user rejects the request we prepare to notify ACP using the [ACP Reject Login Request API](https://docs.authorization.cloudentity.com/api/system/#operation/rejectLoginRequest). 
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+	<title>Custom Consent</title>
+</head>
+
+<body style="background-color: #f8f5f3;">
+	<div class="d-flex flex-column min-vh-100 justify-content-center align-items-center mx-auto" style="width: 600px;">
+		<div class="card">
+			<div class="card-body">
+				<h5 class="card-title">Scopes</h5>
+				<form id="scopeForm" action="/accept" method="post">
+					{{#each scopes}}
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="{{this.name}}" name="{{this.name}}" checked>
+						<label class="form-check-label" for="{{this.name}}">{{this.display_name}} -
+							{{this.description}}</label>
+					</div>
+					{{/each}}
+					<div class="row">
+						<div class="col">
+							<button type="button" class="text-center btn btn-primary mt-3 float-end"
+								onclick="accept()">Accept</button>
+						</div>
+						<div class="col">
+							<button type="button" class="text-center btn btn-danger mt-3"
+								onclick="reject()">Reject</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		function accept() {
+			document.getElementById('scopeForm').submit();
+		}
+
+		function reject() {
+			window.location = '/reject';
+		}
+	</script>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+		integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+		crossorigin="anonymous"></script>
+</body>
+
+</html>
+```
+
+If the user rejects the request we prepare to notify Cloudentity authorization platform using the [Reject Login Request API](https://docs.authorization.cloudentity.com/api/system/#operation/rejectLoginRequest). 
 ```
 router.get('/reject', function (req, res, next) {
   const data = JSON.stringify({ id: appState.id, login_state: appState.state });
@@ -148,7 +221,7 @@ router.get('/reject', function (req, res, next) {
 });
 ```
 
-If the user accepts some or all of the scopes then we get the scopes the user has accepted and prepare to notify ACP using the [ACP Accept Login Request API](https://docs.authorization.cloudentity.com/api/system/#operation/acceptLoginRequest). 
+If the user accepts some or all of the scopes then we get the scopes the user has accepted and prepare to notify Cloudentity authorization platform using the [Accept Login Request API](https://docs.authorization.cloudentity.com/api/system/#operation/acceptLoginRequest). 
 ```
 router.post('/accept', function (req, res, next) {
   let scopes = [];
@@ -160,11 +233,13 @@ router.post('/accept', function (req, res, next) {
 });
 ```
 
-Finally, we notify ACP of the acceptance or rejection of the requested scope. The response from ACP will include a body with `redirect_to` field. We then redirect the user to the provided redirect URI which sends the user agent back to ACP.
+Finally, we notify Cloudentity authorization platform of the acceptance or rejection of the requested scope. The response from Cloudentity authorization platform will include a body with `redirect_to` field. We then redirect the user to the provided redirect URI which sends the user agent back to Cloudentity authorization platform.
 ```
 const handleConsent = async (res, consent, data) => {
+  let CLOUDENTITY_CONSENT_API = getConsentURL(consent);
+
   const options = {
-    url: origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/' + consent,
+    url: CLOUDENTITY_CONSENT_API,
     method: "POST",
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -181,15 +256,30 @@ const handleConsent = async (res, consent, data) => {
     res.render('error', { msg: 'failed to submit consent acceptance: ' + error });
   }
 }
+
+/*
+accept: https://docs.authorization.cloudentity.com/api/system/#operation/acceptLoginRequest
+reject: https://docs.authorization.cloudentity.com/api/system/#operation/rejectLoginRequest
+*/
+function getConsentURL(consent) {
+  return origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/' + consent;
+}
+```
+### Running the Node.js application
+To run the application, enter the following from the root of the project in the terminal.
+```
+make start
 ```
 
+After running make start verify that there are no errors and check that the application is running by visiting `http://localhost:4001/`. You should see that the application is running.
+
 ### Conclusion
-ACP makes it easy to implement a custom consent page, if desired. With very little configuration in ACP and just a few lines of code we were able to implement the custom consent page using Node.js. 
+Cloudentity authorization platform makes it easy to implement a custom consent page, if desired. With very little configuration in Cloudentity authorization platform and just a few lines of code we were able to implement the custom consent page using Node.js. 
 
 ### Relevant Links
  - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749)
- - [Building the Open-Banking-compliant consent page with ACP](https://docs.authorization.cloudentity.com/guides/ob_guides/consent_pg/)
- - [Integrating the custom consent page with ACP](https://docs.authorization.cloudentity.com/guides/ob_guides/custom_consent_page/?q=custom%20consent)
- - [Enabling the custom consent page in ACP](https://docs.authorization.cloudentity.com/guides/ob_guides/custom_consent_intro/?q=custom%20consent)
+ - [Building the Open-Banking-compliant consent page with Cloudentity authorization platform](https://docs.authorization.cloudentity.com/guides/ob_guides/consent_pg/)
+ - [Integrating the custom consent page with Cloudentity authorization platform](https://docs.authorization.cloudentity.com/guides/ob_guides/custom_consent_page/?q=custom%20consent)
+ - [Enabling the custom consent page in Cloudentity authorization platform](https://docs.authorization.cloudentity.com/guides/ob_guides/custom_consent_intro/?q=custom%20consent)
 
 
