@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+	<title>Custom Consent</title>
+</head>
+
+<body style="background-color: #f8f5f3;">
+	<div class="d-flex flex-column min-vh-100 justify-content-center align-items-center mx-auto" style="width: 600px;">
+		<div class="card">
+			<div class="card-body">
+				<h5 class="card-title">Scopes</h5>
+				<form id="scopeForm" action="/accept" method="post">
+					{{#each scopes}}
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="{{this.name}}" name="{{this.name}}" checked>
+						<label class="form-check-label" for="{{this.name}}">{{this.display_name}} -
+							{{this.description}}</label>
+					</div>
+					{{/each}}
+					<div class="row">
+						<div class="col">
+							<button type="button" class="text-center btn btn-primary mt-3 float-end"
+								onclick="accept()">Accept</button>
+						</div>
+						<div class="col">
+							<button type="button" class="text-center btn btn-danger mt-3"
+								onclick="reject()">Reject</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		function accept() {
+			document.getElementById('scopeForm').submit();
+		}
+
+		function reject() {
+			window.location = '/reject';
+		}
+	</script>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+		integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+		crossorigin="anonymous"></script>
+</body>
+
+</html>
