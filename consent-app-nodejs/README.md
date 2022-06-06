@@ -12,7 +12,7 @@ Cloudentity offers a free SaaS Tenant and you can sign up for one, if you have n
 - [ExpressJS](https://expressjs.com) - Recommended 4.16.1 +
 
 ### Basic Concepts
-When a user is authenticated with an OAuth server the user is shown a consent page where the user can accept or reject consents. [Cloudentity Authorization Platform](https://authz.cloudentity.io/) allows the client to set up a custom consent page. There can be a number of reasons why a client would like a custom consent page, one of which is OpenBanking. 
+When a user is authenticated with an OAuth server the user is shown a consent page where the user can accept or reject consents. [Cloudentity Authorization Platform](https://authz.cloudentity.io/) allows the client to set up a custom consent page. There can be a number of reasons why a client would like a custom consent page, one of which is OpenBanking.
 
 An overview of the flow can be seen below.
 ![overview custom consent](images/ob-custom-consent-page-flow.png)
@@ -20,15 +20,17 @@ An overview of the flow can be seen below.
 First, the user agent is redirected to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server, where the user logs in and is authenticated. Once authenticated, [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server then redirects the user to the application hosting the custom consent page . The application then calls the Cloudentity authorization platform scope grant request API to retrieve details on the account access consents. The application displays the consents to the user and the user can accept all, reject all, or accept only some of the consents. Once a selection is made the application redirects the user back to [Cloudentity Authorization Platform](https://authz.cloudentity.io/) authorization server.
 
 ### Preparing Cloudentity SaaS
-First, we create a new workspace for this tutorial. 
+First, we create a new workspace for this tutorial.
 
 From the Authorization Workspaces page, choose 'Create'.  Select 'Demo Environment' type from applications and services.  Enter a Display Name of your choosing and select 'Enable demo application' then select 'Next'.  On the Identify Pools page, under 'Custom and test connections', choose 'Sandbox IDP'. Give the Sandbox IDP a name and enter a Username and Password then select 'Next'. On the 'Create developer portal' page optionally add a developer portal or choose 'Skip'. You will then be redirected to the Authorization Workspaces page.
 
-Select your new workspace and on the left navigation panel choose Auth Settings->Consent. Then select ‘Open Banking Consent’. In the ‘Consent URL’ field add your callback URL. In our app we add a callback of `http://localhost:4001/consent`. Note: The port for this sample app can be changed in .env.  
+Select your new workspace and on the left navigation panel choose Auth Settings->Consent. Then select ‘Open Banking Consent’. In the ‘Consent URL’ field add your callback URL. In our app we add a callback of `http://localhost:4001/consent`.
 
-Make note of the `CLIENT ID` and `CLIENT SECRET` as we will be using these in our application. They will be entered in the `.env` file at the root of the project. Also, make note of your `Tenant ID` in the top right. 
+On the left navigation menu choose Auth Settings->OAuth and from the General tab copy the `Authorization Server URL` (this is your issuer URL and can be found in the .well-known endpoint also).
 
-On the left navigation menu choose Auth Settings->OAuth and from the General tab copy the `Authorization Server URL`.
+> The port for this sample app can be changed in .env.
+
+Once the client application is created a system client will be createdfor you in the `System` workspace. Go to the `System` workspace and find the application that was created for you under `clients` (it will have the same name as the previously created client application). Go to the `OAuth` tab and copy the `CLIENT ID` and `CLIENT SECRET` as we will be using these in the `.env` file at the root of the project. Also, make note of your `Tenant ID` in the top right.
 
 Your workspace is now ready and the authorization server will now redirect the user to the custom consent page of our Node.js application after the user authenticates.
 
@@ -37,10 +39,10 @@ In the sample application repository, from the root of the project open the `.en
 
 `app.js` is just boilerplate for setting up our Express.js application and specifying that we are using Handlebars.js for our view engine.
 
-Inside the `routes` folder lets look at index.js. index.js contains our handlers and the code for obtaining the consent request, getting an authorization token, and accepting or denying the consent request. 
+Inside the `routes` folder lets look at index.js. index.js contains our handlers and the code for obtaining the consent request, getting an authorization token, and accepting or denying the consent request.
 
 First, we get our environment variables.
-```
+```javascript
 const tenant_id = process.env.TENANT_ID;
 const issuer_url = process.env.AUTHORIZATION_SERVER_URL;
 const client_id = process.env.CLIENT_ID;
@@ -48,19 +50,19 @@ const client_secret = process.env.CLIENT_SECRET;
 ```
 
 When we enabled a custom consent page in [Cloudentity Authorization Platform](https://authz.cloudentity.io/) an application was created for us in the System workspace. This application has grant type `client credentials` and `Client Secret Basic` as the Token Endpoint Authentication Method. Using `CLIENT_ID` and `CLIENT_SECRET` we prepare our token which will be used for getting an access token.
-```
+```javascript
 const auth_token = Buffer.from(`${client_id}:${client_secret}`, 'utf-8').toString('base64');
 ```
 
-Next, we add a root path just for checking that our application is running and responding to requests. 
-```
+Next, we add a root path just for checking that our application is running and responding to requests.
+```javascript
 router.get('/', function (req, res, next) {
   res.render('health');
 });
 ```
 
 Next we had a route for `/consent`. This is our redirect URI that Cloudentity authorization platform will redirect users to after they authenticate. The process for handling the custom consent page callback is found here [Integrating the custom consent page](https://docs.authorization.cloudentity.com/guides/ob_guides/custom_consent_page/?q=custom%20consent). We get the login id and login state params. If they are missing we display an error and return. Once we have our login id and state we then `getScopGrants`.
-```
+```javascript
 router.get('/consent', (req, res) => {
   const login_id = req.query.login_id;
   const state = req.query.login_state;
@@ -76,8 +78,8 @@ router.get('/consent', (req, res) => {
 });
 ```
 
-`getScopeGrants` kicks off the process of obtaining an access token and then making the scope grant request. 
-```
+`getScopeGrants` kicks off the process of obtaining an access token and then making the scope grant request.
+```javascript
 const getScopeGrants = async (res) => {
   // An access token is required for making a scope grant request.
   appState.access_token = await getAccessToken(res);
@@ -90,8 +92,8 @@ const getScopeGrants = async (res) => {
 }
 ```
 We make a request to the token endpoint for our access token using the  [Token API](https://docs.authorization.cloudentity.com/api/oauth2/#operation/token).
-```
-const getAccessToken = async (res) => {  
+```javascript
+const getAccessToken = async (res) => {
   let CLOUDENTITY_TOKEN_FETCH_API = getTokenURL();
 
   try {
@@ -123,7 +125,7 @@ function getTokenURL() {
 ```
 
 Once we obtain an access token we make the scope grant request using the [Consent Request API](https://docs.authorization.cloudentity.com/api/system/#operation/getScopeGrantRequest).
-```
+```javascript
 const getScopeGrantRequest = async (res) => {
   let CLOUDENTITY_SCOPE_GRANT_FETCH_API = getScopeGrantURL();
 
@@ -153,7 +155,7 @@ function getScopeGrantURL() {
 ```
 
 The response from the scope grant request will include the requested scopes. We then display the requested scopes to the user. The user can then choose which, if any, scopes they will allow or they can reject the request for access altogether. This application uses Handlebars.js for the view engine. For each scope we display the `display_name` of the scope and the `description`. The template is as shown below.
-```
+```html
 <!doctype html>
 <html lang="en">
 
@@ -213,7 +215,7 @@ The response from the scope grant request will include the requested scopes. We 
 </html>
 ```
 
-If the user rejects the request we prepare to notify Cloudentity authorization platform using the [Reject Login Request API](https://docs.authorization.cloudentity.com/api/system/#operation/rejectLoginRequest). 
+If the user rejects the request we prepare to notify Cloudentity authorization platform using the [Reject Login Request API](https://docs.authorization.cloudentity.com/api/system/#operation/rejectLoginRequest).
 ```
 router.get('/reject', function (req, res, next) {
   const data = JSON.stringify({ id: appState.id, login_state: appState.state });
@@ -221,7 +223,7 @@ router.get('/reject', function (req, res, next) {
 });
 ```
 
-If the user accepts some or all of the scopes then we get the scopes the user has accepted and prepare to notify Cloudentity authorization platform using the [Accept Login Request API](https://docs.authorization.cloudentity.com/api/system/#operation/acceptLoginRequest). 
+If the user accepts some or all of the scopes then we get the scopes the user has accepted and prepare to notify Cloudentity authorization platform using the [Accept Login Request API](https://docs.authorization.cloudentity.com/api/system/#operation/acceptLoginRequest).
 ```
 router.post('/accept', function (req, res, next) {
   let scopes = [];
@@ -234,7 +236,7 @@ router.post('/accept', function (req, res, next) {
 ```
 
 Finally, we notify Cloudentity authorization platform of the acceptance or rejection of the requested scope. The response from Cloudentity authorization platform will include a body with `redirect_to` field. We then redirect the user to the provided redirect URI which sends the user agent back to Cloudentity authorization platform.
-```
+```javascript
 const handleConsent = async (res, consent, data) => {
   let CLOUDENTITY_CONSENT_API = getConsentURL(consent);
 
@@ -267,14 +269,14 @@ function getConsentURL(consent) {
 ```
 ### Running the Node.js application
 To run the application, enter the following from the root of the project in the terminal.
-```
-make start
+```bash
+npm start
 ```
 
-After running make start verify that there are no errors and check that the application is running by visiting `http://localhost:4001/`. You should see that the application is running.
+After running make start verify that there are no errors and check that the application is running by visiting `http://localhost:4001/`. You should see that the application is running. Now go back to Cloudentity platform and select `View all workspaces`. Then cick the three dots in the upper right corner of the card for the cliant application that we created. Click `Demo Application`. This will initiate the OAuth flow. Sign in using the username and password that you chose when the application was created. Once you sign in you should be redirected to the custom consent screen. Once you accept the consent you should be redirected back to Cloudentity platform and your access and id tokens should be visible.
 
 ### Conclusion
-Cloudentity authorization platform makes it easy to implement a custom consent page, if desired. With very little configuration in Cloudentity authorization platform and just a few lines of code we were able to implement the custom consent page using Node.js. 
+Cloudentity authorization platform makes it easy to implement a custom consent page, if desired. With very little configuration in Cloudentity authorization platform and just a few lines of code we were able to implement the custom consent page using Node.js.
 
 ### Relevant Links
  - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749)
