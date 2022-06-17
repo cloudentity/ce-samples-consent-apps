@@ -26,15 +26,15 @@ var appState = {
   redirectURI: null,
 };
 
-router.get('/', function (req, res, next) {
+router.get('/health', function (req, res, next) {
   res.render('health');
 });
 
 /*
-This is the callback from ACP after the user authenticates. We validate that we have login ID 
-and login state. Then we start the flow for getting scope grants.
+This is the url to which user is redirected, if user has not accepted the scopes, after the user authenticates. 
+We validate that we have login ID  and login state. Then we start the flow for getting scope grants.
 
-https://docs.authorization.cloudentity.com/guides/ob_guides/custom_consent_page/?q=custom%20consent
+https://developer.cloudentity.com/howtos/auth_settings/enabling_custom_consent_pages/
 */
 router.get('/consent', (req, res) => {
   const login_id = req.query.login_id;
@@ -53,7 +53,7 @@ router.get('/consent', (req, res) => {
 /*
 User has accepted the scope grants.
 
-https://docs.authorization.cloudentity.com/api/system/#operation/acceptLoginRequest
+https://developer.cloudentity.com/api/authorization_apis/system/#tag/logins/operation/acceptScopeGrantRequest
 */
 router.post('/accept', function (req, res, next) {
   let scopes = [];
@@ -69,7 +69,7 @@ router.post('/accept', function (req, res, next) {
 /*
 User has rejected scope grants.
 
-https://docs.authorization.cloudentity.com/api/system/#operation/rejectLoginRequest
+https://developer.cloudentity.com/api/authorization_apis/system/#tag/logins/operation/rejectScopeGrantRequest
 */
 router.get('/reject', function (req, res, next) {
   const data = JSON.stringify({ id: appState.id, login_state: appState.state });
@@ -118,7 +118,7 @@ const getAccessToken = async (res) => {
   }
 }
 
-// https://docs.authorization.cloudentity.com/api/oauth2/#operation/token
+// https://developer.cloudentity.com/api/oauth2/#operation/token
 function getTokenURL() {
   return origin + '/' + tenant_id + '/system/oauth2/token';
 }
@@ -149,7 +149,7 @@ const getScopeGrantRequest = async (res) => {
   }
 }
 
-// https://docs.authorization.cloudentity.com/api/system/#operation/getScopeGrantRequest
+// https://developer.cloudentity.com/api/authorization_apis/system/#tag/logins/operation/getScopeGrantRequest
 function getScopeGrantURL() {
   return origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '?login_state=' + appState.state;
 }
@@ -159,8 +159,8 @@ The user accepts or rejects the consents. We submit the acceptance/rejection of 
 scope grants to ACP. ACP returns a redirect URI and we redirect the user to that URI or show
 an error if one is received from ACP.
 */
-const handleConsent = async (res, consent, data) => {
-  let CLOUDENTITY_CONSENT_API = getConsentURL(consent);
+const handleConsent = async (res, userConsentState, data) => {
+  let CLOUDENTITY_CONSENT_API = getConsentURL(userConsentState);
 
   const options = {
     url: CLOUDENTITY_CONSENT_API,
@@ -181,13 +181,8 @@ const handleConsent = async (res, consent, data) => {
   }
 }
 
-/*
-accept: https://docs.authorization.cloudentity.com/api/system/#operation/acceptLoginRequest
-reject: https://docs.authorization.cloudentity.com/api/system/#operation/rejectLoginRequest
-*/
-function getConsentURL(consent) {
-  return origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/' + consent;
+function getConsentURL(userConsentState) {
+  return origin + '/api/system/' + tenant_id + '/scope-grants/' + appState.id + '/' + userConsentState;
 }
 
 module.exports = router;
-

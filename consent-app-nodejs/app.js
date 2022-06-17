@@ -8,8 +8,6 @@ const bodyParser = require('body-parser');
 var indexRouter = require('./routes/index');
 
 var app = express();
-app.use(bodyParser.urlencoded());
-app.use(bodyParser.urlencoded({ extended: true }));
 
 app.set('view engine', 'hbs');
 
