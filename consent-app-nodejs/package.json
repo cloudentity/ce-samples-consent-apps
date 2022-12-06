@@ -19,7 +19,7 @@
     "https": "^1.0.0",
     "jwt-decode": "^3.1.2",
     "morgan": "~1.9.1",
-    "pug": "2.0.0-beta11",
+    "pug": "2.0.4",
     "qs": "^6.10.3"
   },
   "devDependencies": {
